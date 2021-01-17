@@ -7,24 +7,28 @@
 const request = require("request"); // require "request" since our query is a get request---not using "net"
 
 
-// use the API endpoint/URL to search for a breed - returns [] if no query added, or no match found
-const url = "https://api.thecatapi.com/v1/breeds/search?q=";
-// let the user specify breed name as a command-line argument
-const breedQuery = process.argv[2];
+// Refactor our previous code by moving the main "request" logic into a function named fetchBreedDescription, which will use a callback to print the results; also move the command-line argument handling to index.js
+const fetchBreedDescription = function(breedName, callback) {
+  // use the API endpoint/URL to search for a breed - returns [] if no query added, or no match found
+  const url = "https://api.thecatapi.com/v1/breeds/search?q=";
 
-request(url + breedQuery, (error, response, body) => {
-  // Print error info if one occurs, and exit the process
-  if (error) {
-    console.log("error:", error);
-    process.exit();
-  }
-  // Parse the body string to convert to an object
-  const data = JSON.parse(body);
-  // Output appropriate message if requested breed not found, or no input received, and exit process
-  if (body === "[]") {
-    console.log(`Sorry, no match found for "${breedQuery}", please try again with revised input`);
-    process.exit();
-  }
-  // Print the description of the first match--could use an array loop to handle multiple matches
-  console.log(data[0].description);
-});
+  request(url + breedName, (error, response, body) => {
+    let description;
+    if (error) {
+      // pass a null description to the callback if there's an error
+      description = null;
+    } else if (body === "[]") {
+      // pass error message and null description if inavlid/no breed given (body = [])
+      error = `Sorry, no match found for "${breedName}", please revise your query and try again`;
+      description = null;
+    } else {
+      // Else, parse the body string & get the description of the first match--could use a loop to pass descriptions of multiple matches
+      description = JSON.parse(body)[0].description;
+    }
+    // call the callback with the error and appropriate description
+    callback(error, description);
+  });
+};
+
+
+module.exports = {fetchBreedDescription};
